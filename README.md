@@ -87,17 +87,6 @@ chown -R www-data:www-data uploads/
 
 ---
 
-## 🔑 Credenciais Iniciais
-
-| Usuário | E-mail | Senha | Nível |
-|---------|--------|-------|-------|
-| Administrador HMP | admin@hmp.pa.gov.br | Admin@2024 | Admin (TI) |
-| Equipe Comunicação | comunicacao@hmp.pa.gov.br | Admin@2024 | Editor |
-
-> ⚠️ **Altere as senhas imediatamente após o primeiro acesso!**
-
----
-
 ## 👥 Níveis de Acesso
 
 | Nível | Acesso |
