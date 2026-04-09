@@ -160,6 +160,14 @@ function imgProcess(string $src, string $mime, string $dest, int $maxW, int $max
     } else {
         // Redimensionar proporcional (só se necessário)
         if ($origW <= $maxW && $origH <= $maxH) {
+<<<<<<< HEAD
+=======
+            // PNG/GIF/WEBP: mesmo sem redimensionar, preservar transparência
+            if (in_array($mime, ['image/png','image/gif','image/webp'])) {
+                imagealphablending($img, false);
+                imagesavealpha($img, true);
+            }
+>>>>>>> 6eab737 (atualização do arquivo post.PHP)
             $canvas = $img;
         } else {
             $ratio  = min($maxW / $origW, $maxH / $origH);
@@ -167,6 +175,13 @@ function imgProcess(string $src, string $mime, string $dest, int $maxW, int $max
             $newH   = max(1, (int) ($origH * $ratio));
             $canvas = imagecreatetruecolor($newW, $newH);
             imgSetBackground($canvas, $mime);
+<<<<<<< HEAD
+=======
+            // Ativar leitura de alpha na imagem fonte antes de copiar
+            if (in_array($mime, ['image/png','image/gif','image/webp'])) {
+                imagealphablending($img, true);
+            }
+>>>>>>> 6eab737 (atualização do arquivo post.PHP)
             imagecopyresampled($canvas, $img, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
         }
     }

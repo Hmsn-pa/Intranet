@@ -63,9 +63,15 @@ define('BASE_PATH', dirname(__DIR__));
 
 // ── BANCO DE DADOS ───────────────────────────────────────────
 define('DB_HOST',    'localhost');
+<<<<<<< HEAD
 define('DB_NAME',    'intranet');
 define('DB_USER',    'root');    // ← padrão XAMPP
 define('DB_PASS',    '');        // ← padrão XAMPP (sem senha)
+=======
+define('DB_NAME',    'intranet_acqua');
+define('DB_USER',    'acqua_user');    // ← padrão XAMPP
+define('DB_PASS',    'password');        // ← padrão XAMPP (sem senha)
+>>>>>>> 6eab737 (atualização do arquivo post.PHP)
 define('DB_CHARSET', 'utf8mb4');
 
 // ── UPLOAD ───────────────────────────────────────────────────

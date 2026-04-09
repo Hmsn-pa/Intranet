@@ -25,8 +25,20 @@ if ($action === 'delete' && $id && isEditor()) {
 
 // SAVE
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['new','edit'])) {
+<<<<<<< HEAD
     if (!verifyCsrf($_POST['csrf'] ?? '')) { $error = 'Token inválido.'; }
     else {
+=======
+    // Detectar se o PHP descartou o POST por excesso de tamanho (upload_max_filesize ou post_max_size)
+    // Nesse caso $_POST fica vazio mas $_SERVER['CONTENT_LENGTH'] existe
+    if (empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
+        $maxPost   = ini_get('post_max_size');
+        $error = "Arquivo muito grande para o servidor. Limite atual: {$maxPost}. "
+               . "Aumente post_max_size e upload_max_filesize no php.ini.";
+    } elseif (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $error = 'Token de segurança inválido. Recarregue a página e tente novamente.';
+    } else {
+>>>>>>> 6eab737 (atualização do arquivo post.PHP)
         $title      = sanitize($_POST['title'] ?? '');
         $summary    = sanitize($_POST['summary'] ?? '');
         $content    = $_POST['content'] ?? '';
