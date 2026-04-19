@@ -3,7 +3,7 @@
 // CONFIGURAÇÃO GERAL — Intranet Acqua v1.2
 // ============================================================
 define('APP_NAME',    'Intranet Acqua');
-define('APP_VERSION', '1.2.0');
+define('APP_VERSION', '1.3.0');
 
 // ── BASE_URL ─────────────────────────────────────────────────
 // Detecta automaticamente o host (IP/domínio) a partir da
