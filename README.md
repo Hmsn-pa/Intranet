@@ -210,11 +210,11 @@ Saída esperada:
 nano /etc/apache2/sites-available/intranet-acqua.conf
 ```
 
-**Cenário A — acesso via subpasta** `http://10.10.1.15/intranet-acqua`
+**Cenário A — acesso via subpasta** `http://IP/intranet-acqua`
 
 ```apache
 <VirtualHost *:80>
-    ServerName   10.10.1.15
+    ServerName   IP
     DocumentRoot /var/www/html
 
     <Directory /var/www/html/intranet-acqua>
@@ -259,11 +259,11 @@ nano /etc/apache2/sites-available/intranet-acqua.conf
 </VirtualHost>
 ```
 
-**Cenário B — acesso direto pelo IP** `http://10.10.1.15`
+**Cenário B — acesso direto pelo IP** `http://IP`
 
 ```apache
 <VirtualHost *:80>
-    ServerName   10.10.1.15
+    ServerName   IP
     DocumentRoot /var/www/html/intranet-acqua
 
     <Directory /var/www/html/intranet-acqua>
@@ -343,13 +343,13 @@ A URL é **detectada automaticamente** por padrão. Só descomente esta linha se
 
 ```php
 // Cenário A — subpasta:
-define('BASE_URL', 'http://10.10.1.15/intranet-acqua');
+define('BASE_URL', 'http://IP/intranet-acqua');
 
 // Cenário B — raiz direta:
-define('BASE_URL', 'http://10.10.1.15');
+define('BASE_URL', 'http://IP');
 
 // Com porta personalizada:
-define('BASE_URL', 'http://10.10.1.15:8060/intranet-acqua');
+define('BASE_URL', 'http://IP:8060/intranet-acqua');
 
 // Com domínio HTTPS:
 define('BASE_URL', 'https://intranet.hmp.pa.gov.br');
