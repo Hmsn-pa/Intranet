@@ -1,4 +1,4 @@
-# 🏥 Intranet Acqua — Hospital da Mulher do Pará
+# 🏥 Intranet Acqua — 
 **Versão 1.3.1** · PHP 8 + MySQL · Apache · Dark Mode · Modular
 
 Portal de comunicação institucional para colaboradores, com gestão de
@@ -519,4 +519,4 @@ apache2ctl configtest
 
 ---
 
-*Intranet Acqua v1.3.1 · Hospital da Mulher do Pará · PHP 8 + MySQL + Apache*
+*Intranet Acqua v1.3.1 ·  · PHP 8 + MySQL + Apache*
