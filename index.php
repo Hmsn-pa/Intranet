@@ -42,19 +42,31 @@ $darkAttr  = $isDark ? 'dark' : 'light';
     </div>
   </a>
 
-  <ul class="navbar-nav">
-    <li><a href="public.php" class="<?= $page==='home'?'active':'' ?>">
-      <span class="material-icons">home</span>Início
-    </a></li>
-    <li><a href="public.php?page=comunicados" class="<?= $page==='comunicados'?'active':'' ?>">
-      <span class="material-icons">campaign</span>Comunicados
-    </a></li>
-    <li><a href="public.php?page=noticias" class="<?= $page==='noticias'?'active':'' ?>">
-      <span class="material-icons">newspaper</span>Notícias Externas
-    </a></li>
-    <li><a href="public.php?page=sistemas" class="<?= $page==='sistemas'?'active':'' ?>">
-      <span class="material-icons">apps</span>Sistemas
-    </a></li>
+  <ul class="navbar-nav" id="navbarNav">
+    <?php
+    $navItems = Database::fetchAll('SELECT * FROM nav_items WHERE active=1 AND parent_id IS NULL ORDER BY sort_order');
+    if (!empty($navItems)):
+        foreach ($navItems as $item):
+            $itemUrl  = $item['url'] ?? '';
+            $itemPage = str_replace(['public.php?page=', 'index.php?page='], '', $itemUrl);
+            $isActive = ($page === $itemPage) ? 'active' : '';
+    ?>
+    <li>
+      <a href="<?= htmlspecialchars($itemUrl) ?>"
+         <?= $item['open_new_tab'] ? 'target="_blank"' : '' ?>
+         class="<?= $isActive ?>">
+        <?php if ($item['icon']): ?>
+        <span class="material-icons"><?= htmlspecialchars($item['icon']) ?></span>
+        <?php endif; ?>
+        <?= htmlspecialchars($item['label']) ?>
+      </a>
+    </li>
+    <?php endforeach; else: ?>
+    <li><a href="public.php" class="<?= $page==='home'?'active':'' ?>"><span class="material-icons">home</span>Início</a></li>
+    <li><a href="public.php?page=comunicados" class="<?= $page==='comunicados'?'active':'' ?>"><span class="material-icons">campaign</span>Comunicados</a></li>
+    <li><a href="public.php?page=noticias" class="<?= $page==='noticias'?'active':'' ?>"><span class="material-icons">newspaper</span>Notícias Externas</a></li>
+    <li><a href="public.php?page=sistemas" class="<?= $page==='sistemas'?'active':'' ?>"><span class="material-icons">apps</span>Sistemas</a></li>
+    <?php endif; ?>
   </ul>
 
   <div class="navbar-end">

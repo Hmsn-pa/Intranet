@@ -1,0 +1,199 @@
+<?php
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/database.php';
+require_once __DIR__ . '/../includes/functions.php';
+requireEditor();
+$isDark = ($_SESSION['dark_mode'] ?? false) || (isset($_COOKIE['acqua_dark']) && $_COOKIE['acqua_dark'] === 'dark');
+$msg = ''; $msgType = 'success';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    if (verifyCsrf($_POST['csrf'] ?? '')) {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) { Database::query('DELETE FROM ramais WHERE id = ?', [$id]); $msg = 'Ramal excluído.'; }
+    }
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) { $msg = 'Token inválido.'; $msgType = 'danger'; } else {
+        $id = (int)($_POST['id'] ?? 0); $andar = trim($_POST['andar'] ?? ''); $setor = trim($_POST['setor'] ?? ''); $ramal = trim($_POST['ramal'] ?? ''); $linha = trim($_POST['linha'] ?? '');
+        if (!$andar || !$setor || !$ramal) { $msg = 'Preencha Andar, Setor e Ramal.'; $msgType = 'danger'; }
+        elseif ($id > 0) { Database::query('UPDATE ramais SET andar=?, setor=?, ramal=?, linha=?, updated_at=NOW() WHERE id=?', [$andar, $setor, $ramal, $linha, $id]); $msg = 'Ramal atualizado.'; }
+        else { $maxOrder = Database::fetch('SELECT MAX(sort_order) as m FROM ramais')['m'] ?? 0; Database::query('INSERT INTO ramais (andar, setor, ramal, linha, sort_order) VALUES (?,?,?,?,?)', [$andar, $setor, $ramal, $linha, $maxOrder + 1]); $msg = 'Ramal adicionado.'; }
+    }
+}
+
+$busca = trim($_GET['q'] ?? ''); $andarF = trim($_GET['andar'] ?? ''); $where = 'WHERE 1=1'; $params = [];
+if ($busca) { $where .= ' AND (setor LIKE ? OR ramal LIKE ? OR linha LIKE ?)'; $params = ["%$busca%","%$busca%","%$busca%"]; }
+if ($andarF) { $where .= ' AND andar = ?'; $params[] = $andarF; }
+$ramais  = Database::fetchAll("SELECT * FROM ramais $where ORDER BY sort_order, andar, setor", $params);
+$andares = Database::fetchAll('SELECT DISTINCT andar FROM ramais ORDER BY sort_order, andar');
+$editRamal = isset($_GET['edit']) ? Database::fetch('SELECT * FROM ramais WHERE id = ?', [(int)$_GET['edit']]) : null;
+?>
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="<?= $isDark ? 'dark' : 'light' ?>">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ramais — <?= htmlspecialchars(getSetting('site_name','Intranet Acqua')) ?></title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
+  <?= getColorVarsStyle() ?>
+</head>
+<body class="fade-in">
+<nav class="navbar">
+  <a href="<?= BASE_URL ?>/admin/index.php" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,var(--primary-dark),var(--accent2))"><span class="material-icons">admin_panel_settings</span></div>
+    <div class="brand-text">Admin Acqua <small>Painel Administrativo</small></div>
+  </a>
+  <div class="navbar-end">
+    <button class="dark-toggle <?= $isDark?'on':'' ?>"></button>
+    <a href="<?= BASE_URL ?>/index.php" class="btn btn-ghost btn-sm"><span class="material-icons">home</span> Intranet</a>
+    <a href="<?= BASE_URL ?>/public.php" class="btn btn-ghost btn-sm" target="_blank"><span class="material-icons">public</span> Público</a>
+    <a href="<?= BASE_URL ?>/logout.php" class="btn btn-ghost btn-sm" style="color:#dc3545"><span class="material-icons">logout</span> Sair</a>
+    <button class="btn btn-ghost btn-icon mobile-menu-btn" id="sidebarToggle"><span class="material-icons">menu</span></button>
+  </div>
+</nav>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-label">Conteúdo</div>
+    <a href="index.php" class="sidebar-link"><span class="material-icons">dashboard</span> Dashboard</a>
+    <a href="posts.php?type=comunicado" class="sidebar-link"><span class="material-icons">campaign</span> Comunicados</a>
+    <a href="posts.php?type=noticia" class="sidebar-link"><span class="material-icons">newspaper</span> Notícias</a>
+    <a href="posts.php?action=new" class="sidebar-link"><span class="material-icons">add_circle</span> Novo Post</a>
+    <a href="categories.php" class="sidebar-link"><span class="material-icons">label</span> Categorias</a>
+    <div class="sidebar-label">Módulos</div>
+    <a href="modules.php?cat=sistema" class="sidebar-link"><span class="material-icons">apps</span> Sistemas</a>
+    <a href="modules.php?cat=link_rapido" class="sidebar-link"><span class="material-icons">bolt</span> Links Rápidos</a>
+    <a href="nav.php" class="sidebar-link"><span class="material-icons">menu_open</span> Menu Nav</a>
+    <a href="ramais.php" class="sidebar-link active"><span class="material-icons">phone_in_talk</span> Ramais</a>
+    <?php if (isAdmin()): ?>
+    <div class="sidebar-label">Administração</div>
+    <a href="users.php" class="sidebar-link"><span class="material-icons">group</span> Usuários</a>
+    <a href="settings.php" class="sidebar-link"><span class="material-icons">settings</span> Configurações</a>
+    <?php endif; ?>
+  </aside>
+  <main class="admin-main">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:22px;margin-bottom:4px">Ramais</h1>
+        <p class="text-muted text-sm"><?= count($ramais) ?> ramal(is) cadastrado(s)</p>
+      </div>
+      <button onclick="document.getElementById('modalNovo').style.display='flex'" class="btn btn-primary">
+        <span class="material-icons">add</span> Novo Ramal
+      </button>
+    </div>
+
+    <?php if ($msg): ?>
+    <div class="alert alert-<?= $msgType ?>" style="margin-bottom:20px">
+      <span class="material-icons"><?= $msgType==='success'?'check_circle':'error' ?></span>
+      <?= htmlspecialchars($msg) ?>
+    </div>
+    <?php endif; ?>
+
+    <div class="card" style="padding:14px 18px;margin-bottom:20px">
+      <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:200px;position:relative">
+          <span class="material-icons" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:17px">search</span>
+          <input type="text" name="q" value="<?= htmlspecialchars($busca) ?>" placeholder="Buscar setor, ramal ou linha…" style="width:100%;padding:9px 14px 9px 36px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);outline:none">
+        </div>
+        <select name="andar" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);outline:none;min-width:150px">
+          <option value="">Todos os andares</option>
+          <?php foreach ($andares as $a): ?>
+          <option value="<?= htmlspecialchars($a['andar']) ?>" <?= $andarF===$a['andar']?'selected':'' ?>><?= htmlspecialchars($a['andar']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <?php if ($busca || $andarF): ?><a href="ramais.php" class="btn btn-ghost btn-sm">Limpar</a><?php endif; ?>
+      </form>
+    </div>
+
+    <div class="card" style="overflow:hidden;padding:0">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--primary)">
+            <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:#fff">Andar</th>
+            <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:#fff">Setor</th>
+            <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:#fff">Ramal</th>
+            <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;color:#fff">Linha</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;color:#fff">Ações</th>
+          </tr></thead>
+          <tbody>
+          <?php foreach ($ramais as $r): ?>
+          <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--primary-xlight)'" onmouseout="this.style.background=''">
+            <td style="padding:11px 16px"><span style="background:var(--primary-xlight);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700"><?= htmlspecialchars($r['andar']) ?></span></td>
+            <td style="padding:11px 16px;font-size:14px;font-weight:500;color:var(--text)"><?= htmlspecialchars($r['setor']) ?></td>
+            <td style="padding:11px 16px"><span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?= htmlspecialchars($r['ramal']) ?></span></td>
+            <td style="padding:11px 16px;font-size:13px;color:var(--text-muted)"><?= $r['linha'] ? htmlspecialchars($r['linha']) : '—' ?></td>
+            <td style="padding:11px 16px;text-align:center">
+              <div style="display:flex;gap:8px;justify-content:center">
+                <a href="ramais.php?edit=<?= $r['id'] ?>" class="btn btn-ghost btn-sm"><span class="material-icons" style="font-size:16px">edit</span></a>
+                <form method="POST" onsubmit="return confirm('Excluir este ramal?')" style="display:inline">
+                  <input type="hidden" name="csrf" value="<?= csrf() ?>">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                  <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc3545"><span class="material-icons" style="font-size:16px">delete</span></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (empty($ramais)): ?>
+          <tr><td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted)">Nenhum ramal encontrado.</td></tr>
+          <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Novo -->
+<div id="modalNovo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div class="card" style="width:100%;max-width:480px;padding:28px;margin:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:700">Novo Ramal</h2>
+      <button onclick="document.getElementById('modalNovo').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--text-muted)"><span class="material-icons">close</span></button>
+    </div>
+    <form method="POST" action="ramais.php">
+      <input type="hidden" name="csrf" value="<?= csrf() ?>">
+      <input type="hidden" name="action" value="save">
+      <input type="hidden" name="id" value="0">
+      <div class="form-group"><label class="form-label">Andar *</label><input type="text" name="andar" class="form-control" placeholder="Ex: Térreo, 1° Andar…" list="andares-list" required><datalist id="andares-list"><?php foreach ($andares as $a): ?><option value="<?= htmlspecialchars($a['andar']) ?>"><?php endforeach; ?></datalist></div>
+      <div class="form-group"><label class="form-label">Setor *</label><input type="text" name="setor" class="form-control" placeholder="Nome do setor" required></div>
+      <div class="form-group"><label class="form-label">Ramal *</label><input type="text" name="ramal" class="form-control" placeholder="Ex: 232" required></div>
+      <div class="form-group"><label class="form-label">Linha Direta</label><input type="text" name="linha" class="form-control" placeholder="Ex: (91) 3197-6328"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <button type="button" onclick="document.getElementById('modalNovo').style.display='none'" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" class="btn btn-primary"><span class="material-icons" style="font-size:16px">save</span> Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Editar -->
+<?php if ($editRamal): ?>
+<div style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div class="card" style="width:100%;max-width:480px;padding:28px;margin:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:700">Editar Ramal</h2>
+      <a href="ramais.php" style="color:var(--text-muted)"><span class="material-icons">close</span></a>
+    </div>
+    <form method="POST" action="ramais.php">
+      <input type="hidden" name="csrf" value="<?= csrf() ?>">
+      <input type="hidden" name="action" value="save">
+      <input type="hidden" name="id" value="<?= $editRamal['id'] ?>">
+      <div class="form-group"><label class="form-label">Andar *</label><input type="text" name="andar" class="form-control" value="<?= htmlspecialchars($editRamal['andar']) ?>" list="andares-list2" required><datalist id="andares-list2"><?php foreach ($andares as $a): ?><option value="<?= htmlspecialchars($a['andar']) ?>"><?php endforeach; ?></datalist></div>
+      <div class="form-group"><label class="form-label">Setor *</label><input type="text" name="setor" class="form-control" value="<?= htmlspecialchars($editRamal['setor']) ?>" required></div>
+      <div class="form-group"><label class="form-label">Ramal *</label><input type="text" name="ramal" class="form-control" value="<?= htmlspecialchars($editRamal['ramal']) ?>" required></div>
+      <div class="form-group"><label class="form-label">Linha Direta</label><input type="text" name="linha" class="form-control" value="<?= htmlspecialchars($editRamal['linha']) ?>"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <a href="ramais.php" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><span class="material-icons" style="font-size:16px">save</span> Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
+<div class="toast-container"></div>
+<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
+</body>
+</html>
